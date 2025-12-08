@@ -1,98 +1,213 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
+import { AnimatePresence, MotiView } from 'moti';
+import React from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import Header from '../../src/components/Header';
+import { THEME } from '../../src/utils/colors';
 
-export default function HomeScreen() {
+// const { width } = Dimensions.get('window');
+
+interface ContentType {
+  id: string;
+  title: string;
+  emoji: string;
+  description: string;
+  gradient: string[];
+  route: string;
+}
+
+const contentTypes: ContentType[] = [
+  {
+    id: 'jokes',
+    title: 'Jokes',
+    emoji: '😂',
+    description: 'Get your daily dose of laughter',
+    gradient: ['#8B5CF6', '#3B82F6'],
+    route: '/jokes',
+  },
+  {
+    id: 'riddles',
+    title: 'Riddles',
+    emoji: '🤔',
+    description: 'Challenge your mind',
+    gradient: ['#1E3A8A', '#3B82F6'],
+    route: '/riddles',
+  },
+  {
+    id: 'stories',
+    title: 'Stories',
+    emoji: '📚',
+    description: 'Short tales to spark imagination',
+    gradient: ['#EA580C', '#DC2626'],
+    route: '/stories',
+  },
+  {
+    id: 'facts',
+    title: 'Fun Facts',
+    emoji: '💡',
+    description: 'Discover amazing facts',
+    gradient: ['#0891B2', '#0EA5E9'],
+    route: '/facts',
+  },
+  {
+    id: 'pickup',
+    title: 'Pickup Lines',
+    emoji: '💕',
+    description: 'Try your luck with these',
+    gradient: ['#EC4899', '#F43F5E'],
+    route: '/pickup',
+  },
+  {
+    id: 'memes',
+    title: 'Memes',
+    emoji: '🎭',
+    description: 'Create or get random memes',
+    gradient: ['#8B5CF6', '#EC4899'],
+    route: '/memes',
+  },
+];
+
+export default function Index() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <Header title="FunBox AI" gradient />
+      
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.welcomeSection}>
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+          >
+            <Text style={styles.welcomeTitle}>Welcome to FunBox AI! 🎉</Text>
+            <Text style={styles.welcomeSubtitle}>
+              Choose your favorite type of entertainment and let AI create something amazing for you!
+            </Text>
+          </MotiView>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <View style={styles.contentTypes}>
+          <AnimatePresence>
+            {contentTypes.map((contentType, index) => (
+              <MotiView
+                key={contentType.id}
+                from={{ opacity: 0, translateY: 20, scale: 0.9 }}
+                animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                transition={{
+                  type: 'spring',
+                  damping: 15,
+                  stiffness: 300,
+                  delay: index * 100,
+                }}
+              >
+                <Link href={contentType.route} asChild>
+                  <TouchableOpacity style={styles.contentCard}>
+                    <LinearGradient
+                      colors={contentType.gradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gradientContainer}
+                    >
+                      <View style={styles.cardContent}>
+                        <Text style={styles.emoji}>{contentType.emoji}</Text>
+                        <Text style={styles.cardTitle}>{contentType.title}</Text>
+                        <Text style={styles.cardDescription}>
+                          {contentType.description}
+                        </Text>
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </Link>
+              </MotiView>
+            ))}
+          </AnimatePresence>
+        </View>
+
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: THEME.background,
   },
-  stepContainer: {
-    gap: 8,
+  content: {
+    flex: 1,
+  },
+  welcomeSection: {
+    padding: 20,
+    paddingTop: 10,
+  },
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: THEME.text.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+    fontFamily: 'Poppins-Bold',
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    color: THEME.text.secondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    fontFamily: 'Inter-SemiBold',
+  },
+  contentTypes: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  contentCard: {
+    width: '100%',
+    height: 120,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  gradientContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emoji: {
+    fontSize: 32,
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    fontFamily: 'Poppins-Bold',
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    fontFamily: 'Inter-SemiBold',
+  },
+  bottomPadding: {
+    height: 100,
   },
 });
