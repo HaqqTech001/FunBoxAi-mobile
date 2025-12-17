@@ -15,7 +15,6 @@ export interface StorageData {
   themeMode?: 'light' | 'dark';
 }
 
-// API Key Management (using SecureStore for security)
 export const setApiKey = async (apiKey: string): Promise<void> => {
   try {
     apiKey= "AIzaSyD4HctnmJarBhSJPrpZHC5yTCxM45mU2lw"
