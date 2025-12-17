@@ -10,13 +10,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import AIResultBox from '../../src/components/AIResultBox';
 import AnimatedAssistant from '../../src/components/AnimatedAssistant';
 import Header from '../../src/components/Header';
 import LoadingDots from '../../src/components/LoadingDots';
 import MemeCard from '../../src/components/MemeCard';
+import { getSubCategories } from '../../src/constants/subCategories';
 import { saveToHistory } from '../../src/db/database';
 import { THEME } from '../../src/utils/colors';
+import { isErrorResponse } from '../../src/utils/errorDetection';
 import { AIResponse, generateContent } from '../../src/utils/geminiAPI';
 
 export default function Memes() {
@@ -25,6 +28,16 @@ export default function Memes() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
+  
+  // Sub-category selection state
+  const [subCategoryOpen, setSubCategoryOpen] = useState(false);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [subCategoryItems, setSubCategoryItems] = useState(
+    getSubCategories('meme').map(item => ({
+      label: item.label,
+      value: item.id
+    }))
+  );
 
   const pickImage = async () => {
     try {
@@ -72,20 +85,27 @@ export default function Memes() {
         });
       }
 
-      const response = await generateContent('meme', undefined, base64Image);
+      // Create enhanced prompt with sub-category
+      const subCategoryPrompt = selectedSubCategory 
+        ? `Generate a ${getSubCategories('meme').find(sc => sc.id === selectedSubCategory)?.label.toLowerCase().replace('work/school memes', 'work/school meme').replace('tech memes', 'tech meme').replace('african memes', 'african meme').replace('random funny memes', 'random funny meme')}.`
+        : 'Generate a funny meme caption.';
+      
+      const response = await generateContent('meme', subCategoryPrompt, base64Image);
       setGeneratedMeme(response);
       
-      if (response.caption === 'Oops! Something went wrong 😅') {
-        setResultMessage('Failed to generate a meme. Please check your connection 😔');
+      if (isErrorResponse(response.caption)) {
+        setResultMessage('Failed to generate a meme. Please check your API key! 😔');
       } else {
         setResultMessage('Your meme is ready! 🎭');
         
-        // Save to history
+        // Save to history only if it's not an error response
         await saveToHistory({
           type: 'meme',
+          subCategory: selectedSubCategory,
           content: response.caption,
           templateIndex: response.templateIndex,
           createdAt: new Date().toISOString(),
+          imageData: base64Image, // Save the base64 image data
         });
       }
     } catch (error) {
@@ -109,7 +129,8 @@ export default function Memes() {
     <View style={styles.container}>
       <Header title="Memes" showBack gradient />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.content} >
+      <View>
         {/* Assistant Section */}
         <View style={styles.assistantSection}>
           <AnimatedAssistant
@@ -149,6 +170,24 @@ export default function Memes() {
             </MotiView>
           )}
         </AnimatePresence>
+
+        {/* Sub-Category Selection */}
+        <View style={styles.subCategoryContainer}>
+          <Text style={styles.subCategoryLabel}>Choose Meme Type:</Text>
+          <DropDownPicker
+            open={subCategoryOpen}
+            value={selectedSubCategory}
+            items={subCategoryItems}
+            setOpen={setSubCategoryOpen}
+            setValue={setSelectedSubCategory}
+            setItems={setSubCategoryItems}
+            placeholder="Select meme type"
+            style={styles.dropdown}
+            textStyle={styles.dropdownText}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={1000}
+          />
+        </View>
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
@@ -221,6 +260,7 @@ export default function Memes() {
                 caption={generatedMeme.caption}
                 templateIndex={generatedMeme.templateIndex}
                 uploadedImage={uploadedImage}
+                imageData={generatedMeme.imageData}
                 onSave={() => {}} // Already saved automatically
                 isSaved={true}
               />
@@ -229,7 +269,9 @@ export default function Memes() {
         </AnimatePresence>
 
         <View style={styles.bottomPadding} />
-      </ScrollView>
+
+      </View>
+      </View>
     </View>
   );
 }
@@ -323,5 +365,29 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  subCategoryContainer: {
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  subCategoryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text.primary,
+    marginBottom: 8,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  dropdown: {
+    backgroundColor: THEME.surface,
+    borderColor: THEME.border,
+    borderWidth: 1,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: THEME.text.primary,
+  },
+  dropdownContainer: {
+    backgroundColor: THEME.surface,
+    borderColor: THEME.border,
   },
 });

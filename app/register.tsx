@@ -69,10 +69,10 @@ export default function RegisterScreen() {
     });
   };
 
-  const handleSkip = async () => {
-    await AsyncStorage.setItem("isLoggedIn", "false");
-    router.replace("/(tabs)");
-  };
+  // const handleSkip = async () => {
+  //   await AsyncStorage.setItem("isLoggedIn", "false");
+  //   router.replace("/(tabs)");
+  // };
 
   return (
     //  <SafeAreaView style={styles.container}
@@ -199,9 +199,9 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             {/* Skip */}
-            <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+            {/* <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
               <Text style={styles.skipButtonText}>Skip Registration</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Footer */}
             <View style={styles.footer}>

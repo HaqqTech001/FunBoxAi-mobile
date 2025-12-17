@@ -10,7 +10,6 @@ export default function Splashscreen() {
   const [shouldShowVideo, setShouldShowVideo] = useState(false);
   const navigation = useRouter()
 
-  // 🎯 Define goNext BEFORE useEvent
   const goNext = useCallback(async () => {
     await AsyncStorage.setItem("splashShown", "true");
 

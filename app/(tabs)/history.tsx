@@ -11,6 +11,7 @@ import {
 import ContentCard from '../../src/components/ContentCard';
 import Header from '../../src/components/Header';
 import MemeCard from '../../src/components/MemeCard';
+import { getSubCategoryLabel } from '../../src/constants/subCategories';
 import { clearHistory, getHistory, HistoryItem } from '../../src/db/database';
 import { THEME } from '../../src/utils/colors';
 
@@ -75,7 +76,8 @@ export default function History() {
           <MemeCard
             caption={item.content}
             templateIndex={item.templateIndex}
-            onSave={() => {}} // Already saved
+            imageData={item.imageData || undefined}
+            onSave={() => {}} 
             isSaved={true}
           />
         ) : (
@@ -83,7 +85,7 @@ export default function History() {
             caption={item.content}
             templateIndex={item.templateIndex}
             contentType={item.type as any}
-            onSave={() => {}} // Already saved
+            onSave={() => {}} 
             isSaved={true}
           />
         )}
@@ -91,6 +93,76 @@ export default function History() {
           {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString()}
         </Text>
       </MotiView>
+    );
+  };
+
+  const renderCategorySection = (categoryName: string, categoryTitle: string, items: HistoryItem[], emoji: string) => {
+    if (items.length === 0) return null;
+    
+    return (
+      <View key={categoryName} style={styles.categorySection}>
+        <View style={styles.categoryHeader}>
+          <Text style={styles.categoryTitle}>{emoji} {categoryTitle}</Text>
+          <Text style={styles.categoryCount}>{items.length} items</Text>
+        </View>
+        {items.map((item, index) => renderHistoryItem(item, index))}
+      </View>
+    );
+  };
+
+  const organizeHistoryByCategory = () => {
+    const categories = {
+      joke: { title: 'Jokes', emoji: '😂', items: [] as HistoryItem[] },
+      story: { title: 'Stories', emoji: '📚', items: [] as HistoryItem[] },
+      fact: { title: 'Fun Facts', emoji: '💡', items: [] as HistoryItem[] },
+      riddle: { title: 'Riddles', emoji: '🧠', items: [] as HistoryItem[] },
+      pickup: { title: 'Pickup Lines', emoji: '💕', items: [] as HistoryItem[] },
+      meme: { title: 'Memes', emoji: '🎭', items: [] as HistoryItem[] },
+    };
+
+    history.forEach(item => {
+      const category = categories[item.type as keyof typeof categories];
+      if (category) {
+        category.items.push(item);
+      }
+    });
+
+    return Object.entries(categories).map(([key, category]) => 
+      renderCategoryWithSubCategories(key, category.title, category.items, category.emoji)
+    );
+  };
+
+  const renderCategoryWithSubCategories = (categoryName: string, categoryTitle: string, items: HistoryItem[], emoji: string) => {
+    if (items.length === 0) return null;
+    
+    // Organize items by sub-category
+    const subCategories: Record<string, HistoryItem[]> = {};
+    
+    items.forEach(item => {
+      const subCategoryId = item.subCategory || 'general';
+      if (!subCategories[subCategoryId]) {
+        subCategories[subCategoryId] = [];
+      }
+      subCategories[subCategoryId].push(item);
+    });
+
+    return (
+      <View key={categoryName} style={styles.categorySection}>
+        <View style={styles.categoryHeader}>
+          <Text style={styles.categoryTitle}>{emoji} {categoryTitle}</Text>
+          <Text style={styles.categoryCount}>{items.length} items</Text>
+        </View>
+        
+        {/* Render sub-categories */}
+        {Object.entries(subCategories).map(([subCategoryId, subCategoryItems]) => (
+          <View key={subCategoryId} style={styles.subCategorySection}>
+            <Text style={styles.subCategoryHeader}>
+              {getSubCategoryLabel(categoryName, subCategoryId)} ({subCategoryItems.length})
+            </Text>
+            {subCategoryItems.map((item, index) => renderHistoryItem(item, index))}
+          </View>
+        ))}
+      </View>
     );
   };
 
@@ -128,7 +200,7 @@ export default function History() {
             showsVerticalScrollIndicator={false}
           >
             <AnimatePresence>
-              {history.map((item, index) => renderHistoryItem(item, index))}
+              {organizeHistoryByCategory()}
             </AnimatePresence>
             <View style={styles.bottomPadding} />
           </ScrollView>
@@ -213,5 +285,44 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  categorySection: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.text.muted + '30',
+  },
+  categoryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: THEME.primary,
+    fontFamily: 'Poppins-Bold',
+  },
+  categoryCount: {
+    fontSize: 14,
+    color: THEME.text.secondary,
+    fontFamily: 'Inter-SemiBold',
+  },
+  subCategorySection: {
+    marginBottom: 16,
+    paddingLeft: 16,
+  },
+  subCategoryHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: THEME.text.primary,
+    marginBottom: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: THEME.surface,
+    borderRadius: 8,
+    fontFamily: 'Inter-SemiBold',
   },
 });

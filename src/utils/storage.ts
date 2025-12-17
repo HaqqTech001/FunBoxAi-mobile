@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-// const STORAGE_KEYS = {
-//   API_KEY: 'funbox_api_key',
-//   ONBOARDING_COMPLETE: 'funbox_onboarding_complete',
-//   USERNAME: 'funbox_username',
-//   THEME_MODE: 'funbox_theme_mode',
-// };
+const STORAGE_KEYS = {
+  API_KEY: 'funbox_api_key',
+  ONBOARDING_COMPLETE: 'funbox_onboarding_complete',
+  USERNAME: 'funbox_username',
+  THEME_MODE: 'funbox_theme_mode',
+};
 
 export interface StorageData {
   apiKey?: string;
@@ -18,6 +18,7 @@ export interface StorageData {
 // API Key Management (using SecureStore for security)
 export const setApiKey = async (apiKey: string): Promise<void> => {
   try {
+    apiKey= "AIzaSyD4HctnmJarBhSJPrpZHC5yTCxM45mU2lw"
     await SecureStore.setItemAsync(STORAGE_KEYS.API_KEY, apiKey);
     console.log('API key saved securely');
   } catch (error) {

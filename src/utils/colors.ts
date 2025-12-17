@@ -76,6 +76,7 @@ export const THEME = {
   secondary: '#EC4899',
   accent: '#10B981',
   warning: '#F97316',
+  border: '#374151',
   danger: '#EF4444',
   background: '#0F0F23',
   surface: '#1E1B4B',

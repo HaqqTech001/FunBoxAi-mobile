@@ -1,19 +1,22 @@
 import { AnimatePresence, MotiView } from 'moti';
 import React, { useState } from 'react';
 import {
-  ScrollView,
+  View,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import AIResultBox from '../../src/components/AIResultBox';
 import AnimatedAssistant from '../../src/components/AnimatedAssistant';
 import ContentCard from '../../src/components/ContentCard';
 import Header from '../../src/components/Header';
 import LoadingDots from '../../src/components/LoadingDots';
+import { getSubCategories } from '../../src/constants/subCategories';
 import { saveToHistory } from '../../src/db/database';
 import { THEME } from '../../src/utils/colors';
+import { isErrorResponse } from '../../src/utils/errorDetection';
 import { AIResponse, generateContent } from '../../src/utils/geminiAPI';
 
 export default function Riddles() {
@@ -21,23 +24,39 @@ export default function Riddles() {
   const [generatedRiddle, setGeneratedRiddle] = useState<AIResponse | null>(null);
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
+  
+  // Sub-category selection state
+  const [subCategoryOpen, setSubCategoryOpen] = useState(false);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [subCategoryItems, setSubCategoryItems] = useState(
+    getSubCategories('riddle').map(item => ({
+      label: item.label,
+      value: item.id
+    }))
+  );
 
   const handleGenerateRiddle = async () => {
     setIsGenerating(true);
     setShowResult(false);
     
     try {
-      const response = await generateContent('riddle');
+      // Create enhanced prompt with sub-category
+      const subCategoryPrompt = selectedSubCategory 
+        ? `Generate a ${getSubCategories('riddle').find(sc => sc.id === selectedSubCategory)?.label.toLowerCase().replace('tricky/hard riddles', 'tricky riddle').replace('math riddles', 'math riddle')}.`
+        : 'Generate an interesting riddle.';
+      
+      const response = await generateContent('riddle', subCategoryPrompt);
       setGeneratedRiddle(response);
       
-      if (response.caption === 'Oops! Something went wrong 😅') {
+      if (isErrorResponse(response.caption)) {
         setResultMessage('Failed to generate a riddle. Please check your connection! 😔');
       } else {
         setResultMessage('Your riddle is ready! 🧠');
         
-        // Save to history
+        // Save to history only if it's not an error response
         await saveToHistory({
           type: 'riddle',
+          subCategory: selectedSubCategory,
           content: response.caption,
           templateIndex: response.templateIndex,
           createdAt: new Date().toISOString(),
@@ -59,7 +78,7 @@ export default function Riddles() {
     <View style={styles.container}>
       <Header title="Riddles" showBack gradient />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.content} >
         {/* Assistant Section */}
         <View style={styles.assistantSection}>
           <AnimatedAssistant
@@ -76,6 +95,24 @@ export default function Riddles() {
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Sub-Category Selection */}
+        <View style={styles.subCategoryContainer}>
+          <Text style={styles.subCategoryLabel}>Choose Riddle Type:</Text>
+          <DropDownPicker
+            open={subCategoryOpen}
+            value={selectedSubCategory}
+            items={subCategoryItems}
+            setOpen={setSubCategoryOpen}
+            setValue={setSelectedSubCategory}
+            setItems={setSubCategoryItems}
+            placeholder="Select riddle type"
+            style={styles.dropdown}
+            textStyle={styles.dropdownText}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={1000}
+          />
         </View>
 
         {/* Action Button */}
@@ -123,7 +160,7 @@ export default function Riddles() {
         </AnimatePresence>
 
         <View style={styles.bottomPadding} />
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -178,5 +215,29 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  subCategoryContainer: {
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  subCategoryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text.primary,
+    marginBottom: 8,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  dropdown: {
+    backgroundColor: THEME.surface,
+    borderColor: THEME.border,
+    borderWidth: 1,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: THEME.text.primary,
+  },
+  dropdownContainer: {
+    backgroundColor: THEME.surface,
+    borderColor: THEME.border,
   },
 });

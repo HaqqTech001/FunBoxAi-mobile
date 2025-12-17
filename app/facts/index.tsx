@@ -7,13 +7,16 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import AIResultBox from '../../src/components/AIResultBox';
 import AnimatedAssistant from '../../src/components/AnimatedAssistant';
 import ContentCard from '../../src/components/ContentCard';
 import Header from '../../src/components/Header';
 import LoadingDots from '../../src/components/LoadingDots';
+import { getSubCategories } from '../../src/constants/subCategories';
 import { saveToHistory } from '../../src/db/database';
 import { THEME } from '../../src/utils/colors';
+import { isErrorResponse } from '../../src/utils/errorDetection';
 import { AIResponse, generateContent } from '../../src/utils/geminiAPI';
 
 export default function Facts() {
@@ -21,23 +24,36 @@ export default function Facts() {
   const [generatedFact, setGeneratedFact] = useState<AIResponse | null>(null);
   const [resultMessage, setResultMessage] = useState('');
   const [showResult, setShowResult] = useState(false);
+  const [subCategoryOpen, setSubCategoryOpen] = useState(false);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [subCategoryItems, setSubCategoryItems] = useState(
+    getSubCategories('fact').map(item => ({
+      label: item.label,
+      value: item.id
+    }))
+  );
 
   const handleGenerateFact = async () => {
     setIsGenerating(true);
     setShowResult(false);
     
     try {
-      const response = await generateContent('fact');
+      const subCategoryPrompt = selectedSubCategory 
+        ? `Generate a ${getSubCategories('fact').find(sc => sc.id === selectedSubCategory)?.label.toLowerCase().replace('fun facts', 'fun fact')}.`
+        : 'Generate an interesting fun fact.';
+      
+      const response = await generateContent('fact', subCategoryPrompt);
       setGeneratedFact(response);
       
-      if (response.caption === 'Oops! Something went wrong 😅') {
+      if (isErrorResponse(response.caption)) {
         setResultMessage('Failed to generate a fun fact. Please check your connection! 😔');
       } else {
         setResultMessage('Your fun fact is ready! 💡');
         
-        // Save to history
+
         await saveToHistory({
           type: 'fact',
+          subCategory: selectedSubCategory,
           content: response.caption,
           templateIndex: response.templateIndex,
           createdAt: new Date().toISOString(),
@@ -49,8 +65,7 @@ export default function Facts() {
     } finally {
       setIsGenerating(false);
       setShowResult(true);
-      
-      // Hide result message after 3 seconds
+    
       setTimeout(() => setShowResult(false), 3000);
     }
   };
@@ -76,6 +91,24 @@ export default function Facts() {
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Sub-Category Selection */}
+        <View style={styles.subCategoryContainer}>
+          <Text style={styles.subCategoryLabel}>Choose Fact Type:</Text>
+          <DropDownPicker
+            open={subCategoryOpen}
+            value={selectedSubCategory}
+            items={subCategoryItems}
+            setOpen={setSubCategoryOpen}
+            setValue={setSelectedSubCategory}
+            setItems={setSubCategoryItems}
+            placeholder="Select fact type"
+            style={styles.dropdown}
+            textStyle={styles.dropdownText}
+            dropDownContainerStyle={styles.dropdownContainer}
+            zIndex={1000}
+          />
         </View>
 
         {/* Action Button */}
@@ -178,5 +211,29 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  subCategoryContainer: {
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
+  subCategoryLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: THEME.text.primary,
+    marginBottom: 8,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  dropdown: {
+    backgroundColor: THEME.surface,
+    borderColor: THEME.border,
+    borderWidth: 1,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: THEME.text.primary,
+  },
+  dropdownContainer: {
+    backgroundColor: THEME.surface,
+    borderColor: THEME.border,
   },
 });

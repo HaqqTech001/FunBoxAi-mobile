@@ -1,125 +1,24 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import Header from '../../src/components/Header';
 import { THEME } from '../../src/utils/colors';
 import {
-  clearAllData,
-  getApiKey,
-  getThemeMode,
-  getUsername,
-  setApiKey,
-  setThemeMode,
-  setUsername,
-  testApiKey,
+  clearAllData
 } from '../../src/utils/storage';
 
 export default function Settings() {
-  const [apiKey, setApiKeyInput] = useState('');
-  const [username, setUsernameInput] = useState('');
-  const [themeMode, setThemeModeState] = useState<'light' | 'dark'>('light');
-  const [testingKey, setTestingKey] = useState(false);
-  const [savingKey, setSavingKey] = useState(false);
-  const [savingUsername, setSavingUsername] = useState(false);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-
-  const GeminiapiKey= ""
-  const loadSettings = async () => {
-    try {
-      const savedApiKey = await getApiKey();
-      const savedUsername = await getUsername();
-      const savedThemeMode = await getThemeMode();
-      
-      setApiKeyInput(savedApiKey || '');
-      setUsernameInput(savedUsername || '');
-      setThemeModeState(savedThemeMode);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
-
-  const handleTestApiKey = async () => {
-    if (!apiKey.trim()) {
-      Alert.alert('Error', 'Please enter an API key first');
-      return;
-    }
-
-    setTestingKey(true);
-    try {
-      const isValid = await testApiKey(apiKey.trim());
-      if (isValid) {
-        Alert.alert('Success', 'API key is valid! 🎉');
-      } else {
-        Alert.alert('Error', 'Invalid API key. Please check and try again.');
-      }
-    } catch (error) {
-      console.error('Error testing API key:', error);
-      Alert.alert('Error', 'Failed to test API key. Please try again.');
-    } finally {
-      setTestingKey(false);
-    }
-  };
-
-  const handleSaveApiKey = async () => {
-    if (!apiKey.trim()) {
-      Alert.alert('Error', 'Please enter an API key');
-      return;
-    }
-
-    setSavingKey(true);
-    try {
-      // Test the key before saving
-      const isValid = await testApiKey(apiKey.trim());
-      if (isValid) {
-        await setApiKey(apiKey.trim());
-        Alert.alert('Success', 'API key saved securely! 🔐');
-      } else {
-        Alert.alert('Error', 'Invalid API key. Please check and try again.');
-      }
-    } catch (error) {
-      console.error('Error saving API key:', error);
-      Alert.alert('Error', 'Failed to save API key. Please try again.');
-    } finally {
-      setSavingKey(false);
-    }
-  };
-
-  const handleSaveUsername = async () => {
-    setSavingUsername(true);
-    try {
-      await setUsername(username.trim());
-      Alert.alert('Success', 'Username saved! 👋');
-    } catch (error) {
-      console.error('Error saving username:', error);
-      Alert.alert('Error', 'Failed to save username. Please try again.');
-    } finally {
-      setSavingUsername(false);
-    }
-  };
-
-  const handleThemeChange = async (value: boolean) => {
-    const newTheme = value ? 'dark' : 'light';
-    setThemeModeState(newTheme);
-    try {
-      await setThemeMode(newTheme);
-      Alert.alert('Theme Updated', `Switched to ${newTheme} mode!`);
-    } catch (error) {
-      console.error('Error saving theme:', error);
-    }
-  };
+  const navigate = useRouter()
 
   const handleClearAllData = () => {
     Alert.alert(
@@ -136,9 +35,9 @@ export default function Settings() {
           onPress: async () => {
             try {
               await clearAllData();
-              setApiKeyInput('');
-              setUsernameInput('');
-              setThemeModeState('light');
+              // setApiKeyInput('');
+              // setUsernameInput('');
+              // setThemeModeState('light');
               Alert.alert('Success', 'All data cleared successfully!');
             } catch (error) {
               console.error('Error clearing data:', error);
@@ -149,117 +48,93 @@ export default function Settings() {
       ]
     );
   };
+  const handleLogout =async ()=>{
+    await AsyncStorage.removeItem("IsLoggedIn")
+    await AsyncStorage.removeItem("user")
+  }
 
   return (
     <View style={styles.container}>
       <Header title="Settings" showBack gradient />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* API Key Section */}
-        {/* <MotiView
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-        >
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🤖 AI Configuration</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Gemini API Key</Text>
-              <TextInput
-                style={styles.input}
-                value={apiKey}
-                onChangeText={setApiKeyInput}
-                placeholder="Enter your Gemini API key"
-                placeholderTextColor={THEME.text.muted}
-                secureTextEntry
-                autoCapitalize="none"
-              />
-              
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.button, styles.testButton]}
-                  onPress={handleTestApiKey}
-                  disabled={testingKey}
-                >
-                  <Text style={styles.buttonText}>
-                    {testingKey ? 'Testing...' : 'Test Key'}
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.button, styles.saveButton]}
-                  onPress={handleSaveApiKey}
-                  disabled={savingKey}
-                >
-                  <Text style={styles.buttonText}>
-                    {savingKey ? 'Saving...' : 'Save Key'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              
-              <Text style={styles.helpText}>
-                🔑 Get your API key from Google AI Studio
-              </Text>
-            </View>
-          </View>
-        </MotiView> */}
+        
 
-        {/* Username Section */}
+        {/* About Section */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 100 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 400 }}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>👤 Personal</Text>
+            <Text style={styles.sectionTitle}>ℹ️ About FunBox AI</Text>
             
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Username</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={setUsernameInput}
-                placeholder="Enter your username"
-                placeholderTextColor={THEME.text.muted}
-                autoCapitalize="none"
-              />
-              
-              <TouchableOpacity
-                style={[styles.button, styles.saveButton]}
-                onPress={handleSaveUsername}
-                disabled={savingUsername}
-              >
-                <Text style={styles.buttonText}>
-                  {savingUsername ? 'Saving...' : 'Save Username'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.button, styles.aboutButton]}
+              onPress={() => {
+                Alert.alert(
+                  'About FunBox AI',
+                  'FunBox AI is an entertainment app powered by advanced AI technology. We create personalized jokes, riddles, stories, facts, pickup lines, and memes to brighten your day!\n\n🎭 Created with ❤️ by HaqqTech\n🚀 Powered by Google Gemini AI',
+                  [{ text: 'Close', style: 'default' }]
+                );
+              }}
+            >
+              <Text style={styles.buttonText}>📱 App Information</Text>
+            </TouchableOpacity>
           </View>
         </MotiView>
 
-        {/* Theme Section */}
+        {/* FAQ Section */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 200 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 500 }}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎨 Appearance</Text>
+            <Text style={styles.sectionTitle}>❓ Help & FAQ</Text>
             
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Dark Mode</Text>
-                <Text style={styles.settingDescription}>
-                  Switch to dark theme
-                </Text>
-              </View>
-              <Switch
-                value={themeMode === 'dark'}
-                onValueChange={handleThemeChange}
-                trackColor={{ false: '#767577', true: THEME.primary }}
-                thumbColor={themeMode === 'dark' ? '#fff' : '#f4f3f4'}
-              />
+            <TouchableOpacity
+              style={[styles.button, styles.faqButton]}
+              onPress={() => {
+                Alert.alert(
+                  'Frequently Asked Questions',
+                  '❓ How do I get started?\n→ Complete Or skip the onboarding Register and Login.\n\n❓ What content can I generate?\n→ Jokes, riddles, short stories, fun facts, pickup lines, and memes!\n\n❓ How does the history work?\n→ All generated content is automatically saved to your personal history library.\n\n❓ Is my data secure?\n→ Yes! Your data is stored securely and all data stays on your device.\n\n❓ Need more help?\n→ Contact us at haqqtech25@gmail.com',
+                  [{ text: 'Close', style: 'default' }]
+                );
+              }}
+            >
+              <Text style={styles.buttonText}>🆘 View FAQ</Text>
+            </TouchableOpacity>
+          </View>
+        </MotiView>
+
+        {/* Version & Credits */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 600 }}
+        >
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🔧 App Info</Text>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Version:</Text>
+              <Text style={styles.infoValue}>1.0.0</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Built by:</Text>
+              <Text style={styles.infoValue}>HaqqTech</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>AI Engine:</Text>
+              <Text style={styles.infoValue}>Google Gemini</Text>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Framework:</Text>
+              <Text style={styles.infoValue}>Expo + React Native</Text>
             </View>
           </View>
         </MotiView>
@@ -283,6 +158,90 @@ export default function Settings() {
             <Text style={styles.helpText}>
               This will permanently delete all your data including API key, history, and preferences.
             </Text>
+          </View>
+        </MotiView>
+
+        {/* Account Section */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 700 }}
+        >
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🔐 Account</Text>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.logoutButton]}
+              onPress={() => {
+                Alert.alert(
+                  'Reset App',
+                  'This will reset the app to its initial state. You will need to:\n• Re-enter your register and login\n• Start fresh with a new onboarding\n\nAre you sure you want to continue?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Reset App',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await clearAllData();
+                          Alert.alert('Success', 'App reset successfully! Please restart the app.');
+                        } catch (error) {
+                          console.error('Error resetting app:', error);
+                          Alert.alert('Error', 'Failed to reset app. Please try again.');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.buttonText}>🔄 Reset App</Text>
+            </TouchableOpacity>
+          </View>
+        </MotiView>
+        {/* Account Section */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 700 }}
+        >
+          <View style={styles.section}>
+            <View style={{flexDirection:"row" ,alignItems:"center", gap:4, paddingBlock: 4, paddingBottom:10}}>
+             <MaterialIcons name="logout" size={24} color="gold" />
+              <Text style={{color:"white", fontWeight:"bold", fontSize:18 }}>Logout</Text>
+              </View>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.logoutButton]}
+              onPress={() => {
+                Alert.alert(
+                  'Logout?',
+                  'Are you sure you want to Logout?',
+                  [
+                    { text: 'No', style: 'cancel' },
+                    {
+                      text: 'Yes',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await handleLogout;
+                          // Alert.alert('Success', 'App reset successfully! Please restart the app.');
+                          navigate.replace("/login")
+                        } catch (error) {
+                          console.error('Error resetting app:', error);
+                          Alert.alert('Error', 'Failed to logout. Please try again.');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <View style={{flexDirection:"row" ,alignItems:"center", gap:4, }}>
+                <MaterialIcons name="logout" size={24} color="" />
+               <Text style={styles.buttonText}> Logout</Text>
+                </View>
+            </TouchableOpacity>
           </View>
         </MotiView>
 
@@ -351,6 +310,34 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     backgroundColor: THEME.danger,
+  },
+  aboutButton: {
+    backgroundColor: '#3B82F6',
+  },
+  faqButton: {
+    backgroundColor: '#8B5CF6',
+  },
+  logoutButton: {
+    backgroundColor: THEME.danger,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  infoLabel: {
+    fontSize: 16,
+    color: THEME.text.secondary,
+    fontFamily: 'Inter-SemiBold',
+  },
+  infoValue: {
+    fontSize: 16,
+    color: THEME.text.primary,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   buttonText: {
     color: 'white',
